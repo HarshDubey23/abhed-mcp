@@ -1,0 +1,14 @@
+{
+  "name": "abhed-mcp",
+  "version": "1.0.0",
+  "description": "MCP server that puts any AI agent's tool calls behind Abhed's action gate: allow, hold for human approval, or block, with every decision on a signed ledger.",
+  "type": "module",
+  "bin": { "abhed-mcp": "cli.mjs" },
+  "main": "index.mjs",
+  "files": ["index.mjs", "cli.mjs", "README.md"],
+  "engines": { "node": ">=18" },
+  "scripts": { "test": "node --test test/*.test.mjs" },
+  "keywords": ["mcp", "model-context-protocol", "ai-agents", "governance", "human-in-the-loop"],
+  "repository": { "type": "git", "url": "https://github.com/HarshDubey23/abhed-mcp" },
+  "license": "MIT"
+}
