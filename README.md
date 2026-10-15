@@ -19,8 +19,8 @@ Zero dependencies, Node 18+.
 
 ## Use it
 
-Add this to your MCP client's config (Cursor: `~/.cursor/mcp.json`; VS Code, Windsurf and
-other clients use the same `mcpServers` block):
+Claude Desktop (`claude_desktop_config.json`), Cursor (`~/.cursor/mcp.json`) and Windsurf
+(`mcp_config.json`) take this `mcpServers` block:
 
 ```json
 {
@@ -33,6 +33,35 @@ other clients use the same `mcpServers` block):
   }
 }
 ```
+
+**VS Code** reads `.vscode/mcp.json`, which uses a top-level `servers` key. This version asks for
+the key when the server first starts, so it never sits in the file:
+
+```json
+{
+  "inputs": [
+    { "type": "promptString", "id": "abhed-agent-key", "description": "Abhed agent key", "password": true }
+  ],
+  "servers": {
+    "abhed": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "github:HarshDubey23/abhed-mcp"],
+      "env": { "ABHED_AGENT_KEY": "${input:abhed-agent-key}" }
+    }
+  }
+}
+```
+
+**Claude Code:**
+
+```bash
+claude mcp add --env ABHED_AGENT_KEY=<your agent key> --transport stdio abhed -- npx -y github:HarshDubey23/abhed-mcp
+```
+
+**n8n** can't use it: n8n's MCP Client Tool connects to a remote (SSE) endpoint, and this server
+runs locally over stdio. On Windows, if a client reports `spawn npx ENOENT`, use
+`"command": "cmd"` with `"args": ["/c", "npx", "-y", "github:HarshDubey23/abhed-mcp"]`.
 
 | Variable | Default | Meaning |
 |---|---|---|
