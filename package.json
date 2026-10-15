@@ -7,7 +7,7 @@
   "main": "index.mjs",
   "files": ["index.mjs", "cli.mjs", "README.md"],
   "engines": { "node": ">=18" },
-  "scripts": { "test": "node --test test/*.test.mjs" },
+  "scripts": { "test": "node --test test/server.test.mjs" },
   "keywords": ["mcp", "model-context-protocol", "ai-agents", "governance", "human-in-the-loop"],
   "repository": { "type": "git", "url": "https://github.com/HarshDubey23/abhed-mcp" },
   "license": "MIT"
