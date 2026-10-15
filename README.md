@@ -3,8 +3,8 @@
 **Put any MCP agent's tool calls behind a gate: allowed, held for a human, or blocked, with every decision on a signed ledger.**
 
 [Abhed](https://github.com/HarshDubey23/hackarena) is an action gate for AI agents. This MCP
-server exposes an agent's Abhed tools to any MCP client (Claude Desktop, Claude Code, Cursor and
-others) and sends every call through Abhed first:
+server exposes an agent's Abhed tools to any MCP client (Cursor, VS Code,
+Windsurf and others) and sends every call through Abhed first:
 
 | Abhed's decision | What the agent gets back |
 |---|---|
@@ -19,11 +19,8 @@ Zero dependencies, Node 18+.
 
 ## Use it
 
-```bash
-claude mcp add abhed --env ABHED_AGENT_KEY=<your agent key> -- npx -y github:HarshDubey23/abhed-mcp
-```
-
-Or in any MCP client config (Claude Desktop: Settings → Developer → Edit Config):
+Add this to your MCP client's config (Cursor: `~/.cursor/mcp.json`; VS Code, Windsurf and
+other clients use the same `mcpServers` block):
 
 ```json
 {
