@@ -15,7 +15,8 @@
 import { createInterface } from 'node:readline';
 
 const VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
-const INFO = { name: 'abhed', version: '1.0.0' };
+const INFO = { name: 'abhed', version: '1.1.0' };
+export const VERSION = INFO.version;
 
 export function config(env = process.env) {
   return {
@@ -36,14 +37,23 @@ export class AbhedClient {
   }
 
   async req(path, body) {
-    const res = await fetch(this.cfg.url + path, {
-      method: body ? 'POST' : 'GET',
-      headers: { authorization: `Bearer ${this.cfg.key}`, 'content-type': 'application/json' },
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    let res;
+    try {
+      res = await fetch(this.cfg.url + path, {
+        method: body ? 'POST' : 'GET',
+        headers: { authorization: `Bearer ${this.cfg.key}`, 'content-type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch (e) {
+      const err = new Error(`Could not reach Abhed at ${this.cfg.url} (${e.cause?.code || e.message}). Check ABHED_URL and your network.`);
+      err.status = 0;
+      throw err;
+    }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const err = new Error(data.error || `Abhed returned HTTP ${res.status}`);
+      let message = data.error || `Abhed returned HTTP ${res.status}`;
+      if (res.status === 401) message = `Abhed rejected the agent key (${message}). Pair a new key in the Abhed console and update ABHED_AGENT_KEY.`;
+      const err = new Error(message);
       err.status = res.status;
       throw err;
     }
@@ -175,8 +185,12 @@ export function makeHandler(client) {
       }
       if (method === 'ping') return ok({});
       if (method === 'tools/list') {
-        const p = await client.getProfile();
-        return ok({ tools: [...META_TOOLS, ...p.tools.map(toMcpTool)] });
+        // If Abhed is unreachable, still list the meta tools so the client connects and
+        // abhed_whoami can report the real error instead of an empty tool list.
+        let granted = [];
+        try { granted = (await client.getProfile()).tools.map(toMcpTool); }
+        catch (e) { process.stderr.write(`abhed-mcp: ${e.message}\n`); }
+        return ok({ tools: [...META_TOOLS, ...granted] });
       }
       if (method === 'tools/call') return ok(await callTool(client, params.name, params.arguments ?? {}));
       return fail(-32601, `method not found: ${method}`);
@@ -185,6 +199,26 @@ export function makeHandler(client) {
       return fail(-32603, e.message);
     }
   };
+}
+
+export const mask = (key) => (key.length > 8 ? `${key.slice(0, 8)}…${key.slice(-2)}` : '(set)');
+
+/** `abhed-mcp --check`: confirm the key and URL work, without starting the server. */
+export async function check(cfg = config(), out = process.stdout) {
+  const log = (l) => out.write(l + '\n');
+  log(`abhed-mcp ${VERSION}`);
+  log(`ABHED_URL        ${cfg.url}`);
+  log(`ABHED_AGENT_KEY  ${cfg.key ? mask(cfg.key) : 'not set'}`);
+  if (!cfg.key) { log('FAIL  set ABHED_AGENT_KEY to an agent key from your Abhed console'); return 1; }
+  try {
+    const p = await new AbhedClient(cfg).getProfile();
+    log(`OK    connected as ${p.agent?.name ?? p.agent?.id ?? 'agent'} (${p.role ?? 'no role'}) at ${p.company ?? 'unknown company'}`);
+    log(`OK    ${p.tools.length} granted tool(s): ${p.tools.map((t) => (t.function ?? t).name).join(', ') || 'none'}`);
+    return 0;
+  } catch (e) {
+    log(`FAIL  ${e.message}`);
+    return 1;
+  }
 }
 
 export function serve(cfg = config()) {

@@ -114,3 +114,66 @@ test('finish closes the task; unknown methods are protocol errors', async () => 
   assert.equal((await tool('abhed_finish_task', { summary: 'done' })).structuredContent.finished, true);
   assert.equal((await rpc('resources/list')).error.code, -32601);
 });
+
+// Separate processes for failure modes and the CLI flags.
+function runCli(args, env) {
+  return new Promise((resolve) => {
+    const p = spawn(process.execPath, [join(ROOT, 'cli.mjs'), ...args], { env: { ...process.env, ...env } });
+    let out = '', err = '';
+    p.stdout.on('data', (d) => (out += d));
+    p.stderr.on('data', (d) => (err += d));
+    p.on('close', (code) => resolve({ code, out, err }));
+  });
+}
+
+async function oneShot(env, method, params) {
+  const p = spawn(process.execPath, [join(ROOT, 'cli.mjs')], { env: { ...process.env, ...env } });
+  let buf = '';
+  const done = new Promise((resolve) => p.stdout.on('data', (d) => {
+    buf += d;
+    const lines = buf.split('\n').filter(Boolean).map((l) => JSON.parse(l));
+    const hit = lines.find((m) => m.id === 2);
+    if (hit) resolve(hit);
+  }));
+  p.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {} } }) + '\n');
+  p.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method, params }) + '\n');
+  const r = await done;
+  p.kill();
+  return r;
+}
+
+test('with Abhed unreachable, tools/list still returns the meta tools and calls explain why', async () => {
+  const env = { ABHED_URL: 'http://127.0.0.1:9', ABHED_AGENT_KEY: KEY };
+  const list = await oneShot(env, 'tools/list');
+  assert.deepEqual(list.result.tools.map((t) => t.name), ['abhed_start_task', 'abhed_check_approval', 'abhed_finish_task', 'abhed_whoami']);
+  const who = await oneShot(env, 'tools/call', { name: 'abhed_whoami', arguments: {} });
+  assert.equal(who.result.isError, true);
+  assert.match(who.result.structuredContent.error, /Could not reach Abhed at http:\/\/127\.0\.0\.1:9 .*Check ABHED_URL/);
+});
+
+test('a rejected key says to pair a new one', async () => {
+  const who = await oneShot({ ABHED_URL: url, ABHED_AGENT_KEY: 'wrong' }, 'tools/call', { name: 'abhed_whoami', arguments: {} });
+  assert.equal(who.result.structuredContent.status, 401);
+  assert.match(who.result.structuredContent.error, /Pair a new key/);
+});
+
+test('--check reports the profile and masks the key; fails clearly on a bad key or missing key', async () => {
+  const good = await runCli(['--check'], { ABHED_URL: url, ABHED_AGENT_KEY: 'test-key' });
+  assert.equal(good.code, 0, good.out);
+  assert.match(good.out, /OK {4}connected as rex \(refunds\) at NovaBank \(fictional\)/);
+  assert.match(good.out, /2 granted tool\(s\): lookup_transaction, issue_refund/);
+  const longKey = await runCli(['--check'], { ABHED_URL: url, ABHED_AGENT_KEY: 'kv_live_abcdefghijklmnop' });
+  assert.equal(longKey.code, 1);
+  assert.ok(!longKey.out.includes('abcdefghijklmnop'), 'the full key must never be printed');
+  assert.match(longKey.out, /kv_live_…op/);
+  assert.match(longKey.out, /FAIL .*Pair a new key/);
+  const none = await runCli(['--check'], { ABHED_URL: url, ABHED_AGENT_KEY: '' });
+  assert.equal(none.code, 1);
+  assert.match(none.out, /not set/);
+});
+
+test('--version prints the package version', async () => {
+  const { version } = JSON.parse(await import('node:fs').then((fs) => fs.readFileSync(join(ROOT, 'package.json'), 'utf8')));
+  const r = await runCli(['--version'], {});
+  assert.equal(r.out.trim(), version);
+});
