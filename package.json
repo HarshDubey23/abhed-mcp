@@ -1,6 +1,6 @@
 {
   "name": "abhed-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MCP server that puts any AI agent's tool calls behind Abhed's action gate: allow, hold for human approval, or block, with every decision on a signed ledger.",
   "type": "module",
   "bin": { "abhed-mcp": "cli.mjs" },
