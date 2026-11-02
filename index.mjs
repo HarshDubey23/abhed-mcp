@@ -8,7 +8,7 @@
  *   BLOCKED         -> refused, with the rule that refused it
  * Each decision is a record in Abhed's hash-chained, signed ledger.
  *
- * Env: ABHED_AGENT_KEY (required), ABHED_URL (default https://kavach-os.vercel.app),
+ * Env: ABHED_AGENT_KEY (required), ABHED_URL (default https://abhed.onrender.com),
  *      ABHED_TASK, ABHED_SUBJECT, ABHED_APPROVAL_WAIT_SECONDS (default 60).
  * Zero dependencies; Node 18+.
  */
@@ -19,7 +19,7 @@ const INFO = { name: 'abhed', version: '1.0.0' };
 
 export function config(env = process.env) {
   return {
-    url: (env.ABHED_URL || 'https://kavach-os.vercel.app').replace(/\/$/, ''),
+    url: (env.ABHED_URL || 'https://abhed.onrender.com').replace(/\/$/, ''),
     key: env.ABHED_AGENT_KEY || '',
     task: env.ABHED_TASK || '',
     subject: env.ABHED_SUBJECT || undefined,

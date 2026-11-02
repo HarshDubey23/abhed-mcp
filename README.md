@@ -7,12 +7,12 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?logo=node.js)](https://nodejs.org/)
 [![Ed25519 Signed](https://img.shields.io/badge/Ledger-Ed25519_Signed-blue)](#)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-success)](#)
-[![Live Demo](https://img.shields.io/badge/Console-kavach--os.vercel.app-orange)](https://kavach-os.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Console-abhed.onrender.com-orange)](https://abhed.onrender.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 *Put any MCP agent's tool executions behind a deterministic policy gate: **Allowed**, **Held for Human Approval**, or **Blocked** — with every decision cryptographically sealed into a hash-chained audit ledger.*
 
-[Live Demo Console](https://kavach-os.vercel.app) · [Abhed Engine Core (hackarena)](https://github.com/HarshDubey23/hackarena) · [Report Bug](https://github.com/HarshDubey23/abhed-mcp/issues)
+[Live Demo Console](https://abhed.onrender.com) · [Abhed Engine Core (hackarena)](https://github.com/HarshDubey23/hackarena) · [Report Bug](https://github.com/HarshDubey23/abhed-mcp/issues)
 
 ---
 
@@ -76,7 +76,7 @@ Add `abhed` to your client configuration with a single block:
       "args": ["-y", "github:HarshDubey23/abhed-mcp"],
       "env": {
         "ABHED_AGENT_KEY": "<your-agent-key>",
-        "ABHED_URL": "https://kavach-os.vercel.app"
+        "ABHED_URL": "https://abhed.onrender.com"
       }
     }
   }
@@ -112,7 +112,7 @@ Add to your extension's MCP server settings under the `mcpServers` object.
 | Variable | Default | Description |
 |---|---|---|
 | `ABHED_AGENT_KEY` | *(Required)* | Secret agent token generated from the Abhed console |
-| `ABHED_URL` | `https://kavach-os.vercel.app` | Target Abhed server deployment endpoint |
+| `ABHED_URL` | `https://abhed.onrender.com` | Target Abhed server deployment endpoint |
 | `ABHED_TASK` | `Task from MCP client` | Default task scope if agent does not declare one |
 | `ABHED_SUBJECT` | *None* | Constrains agent execution to a specific customer or resource ID |
 | `ABHED_APPROVAL_WAIT_SECONDS` | `60` | Duration to wait for human operator approval before returning an asynchronous polling ID |
