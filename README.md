@@ -58,6 +58,7 @@ Autonomous AI agents in tools like Cursor, Claude Desktop, and VS Code have raw 
 | Decision | System Action | What the Agent Receives |
 |---|---|---|
 | `ALLOWED` | Evaluated against deterministic policy; verified safe. | The real tool output directly. |
+| `APPROVED_WAITING_TO_COMMIT` | A person approved a large refund, and it is waiting out its cancel window. | No money has moved. A commit id to follow with `abhed_check_commit`. |
 | `NEEDS_APPROVAL` | High-stakes or flagged action held for human authorization. | Server waits for human sign-off (default 60s), then returns executed result or `approval_id`. |
 | `BLOCKED` | Policy violation or prompt-injection attempt detected. | Strict error naming the security rule that refused execution. |
 
@@ -65,7 +66,15 @@ Autonomous AI agents in tools like Cursor, Claude Desktop, and VS Code have raw 
 
 ## ⚡ Quick Start: Add to Your Favorite MCP Client
 
-Add `abhed` to your client configuration with a single block:
+**[Watch the setup guide](https://github.com/HarshDubey23/abhed/blob/main/docs/video/abhed-mcp-guide.webm)** (3:12), or follow the [written guide](https://github.com/HarshDubey23/abhed/blob/main/docs/MCP_GUIDE.md).
+
+Check your key first. This speaks MCP to the real server and walks through each outcome, one step at a time:
+
+```bash
+ABHED_AGENT_KEY=kv_live_your_key ABHED_URL=https://abhed.onrender.com npm run try
+```
+
+Then add `abhed` to your client configuration with a single block:
 
 ### 1. Cursor (`~/.cursor/mcp.json`)
 ```json
@@ -121,12 +130,13 @@ Add to your extension's MCP server settings under the `mcpServers` object.
 
 ## 🧰 Native Built-in Tools
 
-Four governance tools are provided out of the box to all connected agents:
+Five governance tools are provided out of the box to all connected agents:
 
 1. `abhed_start_task`: Declares task intent and customer context. Abhed inspects this initial payload for prompt injection vectors.
 2. `abhed_check_approval`: Asynchronously checks if a previously held action has received human approval and retrieves its execution payload.
-3. `abhed_finish_task`: Closes the operational session and outputs an auditable summary into the permanent ledger.
-4. `abhed_whoami`: Returns the active agent's role, associated organization, and granted resource limits.
+3. `abhed_check_commit`: Follows a large refund through its cancel window. No money has moved while its status is `WAITING`, and it ends `COMMITTED` or `CANCELLED`.
+4. `abhed_finish_task`: Closes the operational session and outputs an auditable summary into the permanent ledger.
+5. `abhed_whoami`: Returns the active agent's role, associated organization, and granted resource limits.
 
 ---
 
