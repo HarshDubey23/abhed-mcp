@@ -66,7 +66,7 @@ Autonomous AI agents in tools like Cursor, Claude Desktop, and VS Code have raw 
 
 ## ⚡ Quick Start: Add to Your Favorite MCP Client
 
-**[Watch the setup guide](https://github.com/HarshDubey23/abhed/blob/main/docs/video/abhed-mcp-guide.webm)** (3:12), or follow the [written guide](https://github.com/HarshDubey23/abhed/blob/main/docs/MCP_GUIDE.md).
+Follow the [written guide](https://github.com/HarshDubey23/abhed/blob/main/docs/MCP_GUIDE.md).
 
 Check your key first. This speaks MCP to the real server and walks through each outcome, one step at a time:
 
