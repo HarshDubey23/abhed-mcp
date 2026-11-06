@@ -28,6 +28,7 @@ function mock(req, res) {
     if (req.url === '/api/v1/sessions') return send(200, { sessionId: 'S-1', tainted: /ignore previous/i.test(b.task), signals: [] });
     if (req.url === '/api/v1/tools/call') {
       if (b.tool === 'lookup_transaction') return send(200, { decision: 'ALLOWED', output: { txns: 2 }, record: 7 });
+      if (b.args.amount === 60000) return send(200, { decision: 'NEEDS_APPROVAL', reason: 'large refund', approvalId: 'A-2', record: 11 });
       if (b.args.amount > 100000) return send(200, { decision: 'BLOCKED', reason: 'over delegation', rule: 'R-LIMIT', record: 8 });
       return send(200, { decision: 'NEEDS_APPROVAL', reason: 'refund over 10,000', approvalId: 'A-1', record: 9 });
     }
@@ -36,6 +37,8 @@ function mock(req, res) {
       return send(200, approvalPolls < 2 ? { id: 'A-1', status: 'PENDING', approverRole: 'L2', votes: [] }
         : { id: 'A-1', status: 'EXECUTED', output: { refunded: 40000 }, votes: [{ name: 'Priya' }], record: 10 });
     }
+    if (req.url === '/api/v1/approvals/A-2') return send(200, { id: 'A-2', status: 'APPROVED', commitId: 'CMB-1', output: { status: 'WAITING_TO_COMMIT', commitId: 'CMB-1', commitAt: 123 }, votes: [{ name: 'Priya' }] });
+    if (req.url === '/api/v1/commits/CMB-1') return send(200, { id: 'CMB-1', status: 'CANCELLED', cancelledBy: 'Priya' });
     if (req.url === '/api/v1/sessions/S-1/finish') return send(200, { ok: true });
     send(404, { error: 'not found' });
   });
@@ -76,7 +79,7 @@ after(() => { proc.kill(); http.close(); });
 
 test('lists the agent tools plus the Abhed meta tools', async () => {
   const names = (await rpc('tools/list')).result.tools.map((t) => t.name);
-  assert.deepEqual(names.slice(0, 4), ['abhed_start_task', 'abhed_check_approval', 'abhed_finish_task', 'abhed_whoami']);
+  assert.deepEqual(names.slice(0, 5), ['abhed_start_task', 'abhed_check_approval', 'abhed_check_commit', 'abhed_finish_task', 'abhed_whoami']);
   assert.ok(names.includes('lookup_transaction') && names.includes('issue_refund'));
 });
 
@@ -94,6 +97,16 @@ test('a held call waits for the human and returns the executed output', async ()
   assert.equal(r.structuredContent.decision, 'APPROVED_AND_EXECUTED');
   assert.deepEqual(r.structuredContent.output, { refunded: 40000 });
   assert.ok(approvalPolls >= 2);
+});
+
+test('an approved refund in its cancel window says no money has moved, and can be checked', async () => {
+  const r = await tool('issue_refund', { customer: 'C-1029', amount: 60000 });
+  assert.notEqual(r.isError, true);
+  assert.equal(r.structuredContent.decision, 'APPROVED_WAITING_TO_COMMIT');
+  assert.equal(r.structuredContent.commitId, 'CMB-1');
+  assert.match(r.structuredContent.next, /No money has moved/);
+  const c = await tool('abhed_check_commit', { commit_id: 'CMB-1' });
+  assert.deepEqual(c.structuredContent, { id: 'CMB-1', status: 'CANCELLED', cancelledBy: 'Priya' });
 });
 
 test('a blocked call is an error with the refusing rule', async () => {

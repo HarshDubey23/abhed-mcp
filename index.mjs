@@ -107,6 +107,12 @@ const META_TOOLS = [
     annotations: { readOnlyHint: true },
   },
   {
+    name: 'abhed_check_commit',
+    description: 'Check a large refund waiting out its cancel window. No money has moved while its status is WAITING. It ends COMMITTED or CANCELLED.',
+    inputSchema: { type: 'object', properties: { commit_id: { type: 'string' } }, required: ['commit_id'] },
+    annotations: { readOnlyHint: true },
+  },
+  {
     name: 'abhed_finish_task',
     description: 'Close the current task with a short summary for the audit trail.',
     inputSchema: { type: 'object', properties: { summary: { type: 'string' } } },
@@ -144,8 +150,9 @@ export async function callTool(client, name, args = {}) {
   if (name === 'abhed_finish_task') return text(await client.finish(String(args.summary ?? '')));
   if (name === 'abhed_check_approval') {
     const a = await client.approval(String(args.approval_id));
-    return text({ approvalId: a.id, status: a.status, output: a.output, approvers: a.votes, expiresAt: a.expiresAt });
+    return text({ approvalId: a.id, status: a.status, output: a.output, commitId: a.commitId, approvers: a.votes, expiresAt: a.expiresAt });
   }
+  if (name === 'abhed_check_commit') return text(await client.req(`/api/v1/commits/${encodeURIComponent(String(args.commit_id))}`));
 
   const tools = (await client.getProfile()).tools.map(toMcpTool);
   if (!tools.some((t) => t.name === name)) return text({ decision: 'BLOCKED', reason: `tool ${name} is not granted to this agent` }, true);
@@ -155,6 +162,7 @@ export async function callTool(client, name, args = {}) {
   if (r.decision === 'NEEDS_APPROVAL' && r.approvalId) {
     const a = await client.waitForApproval(r.approvalId);
     if (a.status === 'EXECUTED') return text({ decision: 'APPROVED_AND_EXECUTED', output: a.output, approvers: a.votes, ledgerRecord: a.record });
+    if (a.commitId && a.status === 'APPROVED') return text({ decision: 'APPROVED_WAITING_TO_COMMIT', commitId: a.commitId, output: a.output, approvers: a.votes, next: 'No money has moved yet. A person can still cancel it. Call abhed_check_commit; do not retry the action or tell anyone it is done.' });
     if (a.status === 'PENDING') return text({ decision: 'NEEDS_APPROVAL', approvalId: r.approvalId, reason: r.reason, approverRole: a.approverRole, next: 'A person must approve this in Abhed. Call abhed_check_approval later; do not retry the action.' });
     return text({ decision: a.status, approvalId: r.approvalId, reason: r.reason }, true);
   }
