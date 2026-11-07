@@ -40,10 +40,13 @@ const lines = createInterface({ input: process.stdin });
 const waiting = [];
 lines.on('line', () => waiting.shift()?.());
 lines.on('close', () => { while (waiting.length) waiting.shift()(); });
+// ABHED_TRY_AUTO=3000 takes each step on its own after that many ms, for screen recordings and scripts
+const AUTO = Number(process.env.ABHED_TRY_AUTO ?? 0);
 const step = (title) =>
   new Promise((resolve) => {
-    console.log(`\n${bold(title)} ${dim('(press Enter)')}`);
-    waiting.push(resolve);
+    console.log(`\n${bold(title)}${AUTO ? '' : ` ${dim('(press Enter)')}`}`);
+    if (AUTO) setTimeout(resolve, AUTO);
+    else waiting.push(resolve);
   });
 
 async function call(name, args = {}) {
